@@ -1,7 +1,7 @@
 {
     "version": "0.0.0",
     "summary": "Eggdude game in Elm",
-    "repository": "https://github.com/dancras/eggdude-elm",
+    "repository": "https://github.com/dancras/eggdude-elm.git",
     "license": "BSD3",
     "source-directories": [
         "."
