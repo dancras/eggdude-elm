@@ -10,13 +10,15 @@ import Window
 
 type alias Positioned p = { p | x : Float, y : Float }
 
+type alias Movable m = { m | vx: Float, vy: Float, ax: Float, ay: Float }
+
 type alias Wall = Positioned(
     { w : Float
     , h : Float
     , color : Color
     })
 
-type alias Player = Positioned({})
+type alias Player = Movable(Positioned({}))
 
 type alias World =
     { walls : List Wall
@@ -33,30 +35,53 @@ world =
         [ { x = -500, y = 100, w = 800, h = 30, color = rgb 200 40 40 }
         , { x = 600, y = 200, w = 600, h = 30, color = rgb 40 200 40 }
         ]
-    , player = { x = 0, y = 0 }
+    , player = { x = 0, y = 0, vx = 0, vy = 0, ax = 0, ay = 0 }
     }
 
 camera : Camera
 camera = { x = 0, y = 0, boundX = 200 }
 
 updateWorld : (Float, Keys) -> World -> World
-updateWorld input world =
+updateWorld (delta, keys) world =
     { world |
-        player <- movePlayer input world.player
+        player <- world.player
+            |> updatePlayerAcceleration keys
+            |> updatePlayerVelocity
+            |> updatePlayerPosition delta
+            |> Debug.watch "player"
     }
 
-moveCamera : (Float, Keys) -> Camera -> Camera
-moveCamera (delta, keys) camera =
-    { camera |
-        x <- camera.x - delta * ((toFloat keys.x) * 5)
-        {- y <- camera.y - delta * ((toFloat keys.y) * 5) -}
-    }
-
-movePlayer : (Float, Keys) -> Player -> Player
-movePlayer (delta, keys) player =
+updatePlayerAcceleration : Keys -> Player -> Player
+updatePlayerAcceleration keys player = 
     { player |
-        x <- player.x + delta * ((toFloat keys.x) * 5),
-        y <- player.y + delta * ((toFloat keys.y) * 5)
+        ax <- if | keys.x > 0 -> 2
+                 | keys.x < 0 -> -2
+                 | otherwise -> if | player.vx > 0 -> (if | player.vx < 2 -> -player.vx
+                                                          | otherwise -> -2)
+                                   | player.vx < 0 -> (if | player.vx > -2 -> player.vx
+                                                          | otherwise -> 2)
+                                   | otherwise -> 0,
+        ay <- if | keys.y > 0 -> 2
+                 | keys.y < 0 -> -2
+                 | otherwise -> if | player.vy > 0 -> (if | player.vy < 2 -> -player.vy
+                                                          | otherwise -> -2)
+                                   | player.vy < 0 -> (if | player.vy > -2 -> player.vy
+                                                          | otherwise -> 2)
+                                   | otherwise -> 0
+    }
+
+updatePlayerVelocity : Player -> Player
+updatePlayerVelocity  player =
+    { player |
+        vx <- max -10 <| min 10 <| player.vx + player.ax,
+        vy <- max -10 <| min 10 <| player.vy + player.ay
+    }
+
+updatePlayerPosition : Float -> Player -> Player
+updatePlayerPosition delta player =
+    { player |
+        x <- player.x + delta * player.vx,
+        y <- player.y + delta * player.vy
     }
 
 movePositioned : (Float, Float) -> Positioned(p) -> Positioned(p)
@@ -104,7 +129,7 @@ view (w', h') {walls, player} =
 
 input : Signal (Float, Keys)
 input =
-  let delta = Signal.map (\t -> t/15) (Time.fps 60)
+  let delta = Signal.map (\t -> t/30) (Time.fps 60)
       deltaArrows =
           Signal.map2 (,) delta Keyboard.arrows
   in
