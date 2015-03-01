@@ -1,0 +1,13 @@
+{
+    "version": "0.0.0",
+    "summary": "Eggdude game in Elm",
+    "repository": "https://github.com/dancras/eggdude-elm",
+    "license": "BSD3",
+    "source-directories": [
+        "."
+    ],
+    "exposed-modules": [],
+    "dependencies": {
+        "elm-lang/core": "1.1.1 <= v < 2.0.0"
+    }
+}
