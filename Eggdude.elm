@@ -57,14 +57,14 @@ updatePlayerAcceleration keys player =
     let a = if | keys.x /= 0 && keys.y /= 0 -> 1
                | otherwise -> 2
     in
-    { player |
-        ax <- if | keys.x > 0 -> a
-                 | keys.x < 0 -> -a
-                 | otherwise -> max -a <| min a <| -player.vx,
-        ay <- if | keys.y > 0 -> a
-                 | keys.y < 0 -> -a
-                 | otherwise -> max -a <| min a <| -player.vy
-    }
+        { player |
+            ax <- if | keys.x > 0 -> a
+                     | keys.x < 0 -> -a
+                     | otherwise -> max -a <| min a <| -player.vx,
+            ay <- if | keys.y > 0 -> a
+                     | keys.y < 0 -> -a
+                     | otherwise -> max -a <| min a <| -player.vy
+        }
 
 resistanceDueToVelocity : Player -> Player
 resistanceDueToVelocity player =
@@ -74,7 +74,7 @@ resistanceDueToVelocity player =
     }
 
 updatePlayerVelocity : Player -> Player
-updatePlayerVelocity  player =
+updatePlayerVelocity player =
     { player |
         vx <- player.vx + player.ax,
         vy <- player.vy + player.ay
