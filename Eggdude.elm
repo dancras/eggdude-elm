@@ -46,35 +46,38 @@ updateWorld (delta, keys) world =
     { world |
         player <- world.player
             |> updatePlayerAcceleration keys
+            |> resistanceDueToVelocity
             |> updatePlayerVelocity
             |> updatePlayerPosition delta
             |> Debug.watch "player"
     }
 
 updatePlayerAcceleration : Keys -> Player -> Player
-updatePlayerAcceleration keys player = 
+updatePlayerAcceleration keys player =
+    let a = if | keys.x /= 0 && keys.y /= 0 -> 1
+               | otherwise -> 2
+    in
     { player |
-        ax <- if | keys.x > 0 -> 2
-                 | keys.x < 0 -> -2
-                 | otherwise -> if | player.vx > 0 -> (if | player.vx < 2 -> -player.vx
-                                                          | otherwise -> -2)
-                                   | player.vx < 0 -> (if | player.vx > -2 -> player.vx
-                                                          | otherwise -> 2)
-                                   | otherwise -> 0,
-        ay <- if | keys.y > 0 -> 2
-                 | keys.y < 0 -> -2
-                 | otherwise -> if | player.vy > 0 -> (if | player.vy < 2 -> -player.vy
-                                                          | otherwise -> -2)
-                                   | player.vy < 0 -> (if | player.vy > -2 -> player.vy
-                                                          | otherwise -> 2)
-                                   | otherwise -> 0
+        ax <- if | keys.x > 0 -> a
+                 | keys.x < 0 -> -a
+                 | otherwise -> max -a <| min a <| -player.vx,
+        ay <- if | keys.y > 0 -> a
+                 | keys.y < 0 -> -a
+                 | otherwise -> max -a <| min a <| -player.vy
+    }
+
+resistanceDueToVelocity : Player -> Player
+resistanceDueToVelocity player =
+    { player |
+        ax <- player.ax - (abs player.vx) * player.vx * 0.02,
+        ay <- player.ay - (abs player.vy) * player.vy * 0.02
     }
 
 updatePlayerVelocity : Player -> Player
 updatePlayerVelocity  player =
     { player |
-        vx <- max -10 <| min 10 <| player.vx + player.ax,
-        vy <- max -10 <| min 10 <| player.vy + player.ay
+        vx <- player.vx + player.ax,
+        vy <- player.vy + player.ay
     }
 
 updatePlayerPosition : Float -> Player -> Player
