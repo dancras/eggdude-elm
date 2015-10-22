@@ -1,8 +1,9 @@
-import Color (..)
+import Color exposing (..)
 import Debug
-import Graphics.Collage (..)
-import Graphics.Element (..)
-import List (..)
+import Graphics.Collage exposing (..)
+import Graphics.Element exposing (..)
+import List exposing (..)
+import Maybe exposing ( Maybe(..) )
 import Keyboard
 import Signal
 import Time
@@ -18,15 +19,19 @@ type alias Wall = Positioned(
     , color : Color
     })
 
-type alias Player = Movable(
-    { facingX : Int,
-      facingY : Int
+type alias Facing f = Movable({ f | facingX : Int, facingY : Int })
+
+type alias Follower = Facing(
+    { breadcrumbX : Maybe Float
+    , breadcrumbY : Maybe Float
+    , targetPreviousFacingX : Int
+    , targetPreviousFacingY : Int
     })
 
 type alias World =
     { walls : List Wall
-    , player : Player
-    , followers : List( Movable({}) )
+    , player : Facing({})
+    , followers : List( Follower )
     }
 
 type alias Camera = Positioned({ boundX : Float })
@@ -40,10 +45,10 @@ world =
         , { x = 600, y = 200, w = 600, h = 30, color = rgb 40 200 40 }
         ]
     , player = { x = 0, y = 0, vx = 0, vy = 0, ax = 0, ay = 0, facingX = 1, facingY = 0 }
-    , followers = [ { x = 100, y = 0, vx = 0, vy = 0, ax = 0, ay = 0 }
-                  , { x = 200, y = 0, vx = 0, vy = 0, ax = 0, ay = 0 }
-                  , { x = 300, y = 0, vx = 0, vy = 0, ax = 0, ay = 0 }
-                  , { x = 400, y = 0, vx = 0, vy = 0, ax = 0, ay = 0 }
+    , followers = [ { x = 100, y = 0, vx = 0, vy = 0, ax = 0, ay = 0, facingX = 1, facingY = 0, breadcrumbX = Nothing, breadcrumbY = Nothing, targetPreviousFacingX = 1, targetPreviousFacingY = 0 }
+                  , { x = 200, y = 0, vx = 0, vy = 0, ax = 0, ay = 0, facingX = 1, facingY = 0, breadcrumbX = Nothing, breadcrumbY = Nothing, targetPreviousFacingX = 1, targetPreviousFacingY = 0 }
+                  , { x = 300, y = 0, vx = 0, vy = 0, ax = 0, ay = 0, facingX = 1, facingY = 0, breadcrumbX = Nothing, breadcrumbY = Nothing, targetPreviousFacingX = 1, targetPreviousFacingY = 0 }
+                  , { x = 400, y = 0, vx = 0, vy = 0, ax = 0, ay = 0, facingX = 1, facingY = 0, breadcrumbX = Nothing, breadcrumbY = Nothing, targetPreviousFacingX = 1, targetPreviousFacingY = 0 }
                   ]
     }
 
@@ -52,24 +57,44 @@ camera = { x = 0, y = 0, boundX = 200 }
 
 updateWorld : (Float, Keys) -> World -> World
 updateWorld (delta, keys) world =
-    { world |
-        player <- world.player
-            |> updateAcceleration keys
-            |> updatePlayerFacing keys
-            |> resistanceDueToVelocity 0.02
-            |> updateVelocity
-            |> updatePosition delta
-            |> Debug.watch "player",
-        followers <- world.followers
-            |> map2 updateAcceleration (followerKeys (toPositioned world.player) (map toPositioned world.followers))
-            |> map (resistanceDueToVelocity 0.015)
-            |> map updateVelocity
-            |> map (updatePosition delta)
-            |> Debug.watch "followers"
+    let followerKeysList = followerKeys (toPositioned world.player) (map toPositioned world.followers)
+    in
+        { world |
+            player <- world.player
+                |> updateAcceleration keys
+                |> updateFacing keys
+                |> resistanceDueToVelocity 0.02
+                |> updateVelocity
+                |> updatePosition delta
+                |> Debug.watch "player",
+            followers <- world.followers
+                |> map2 updateAcceleration followerKeysList
+                |> map2 updateFacing followerKeysList
+                |> map2 updateBreadcrumb ((toFacing world.player) :: (map toFacing world.followers))
+                |> map (resistanceDueToVelocity 0.015)
+                |> map updateVelocity
+                |> map (updatePosition delta)
+                |> Debug.watch "followers"
+        }
+
+
+
+updateBreadcrumb : Facing(a) -> Follower -> Follower
+updateBreadcrumb target follower =
+    { follower |
+        breadcrumbX <- if | target.facingY /= follower.targetPreviousFacingY -> Just target.x
+                          | otherwise -> follower.breadcrumbX
+    ,   breadcrumbY <- if | target.facingX /= follower.targetPreviousFacingX -> Just target.y
+                          | otherwise -> follower.breadcrumbY
+    ,   targetPreviousFacingX <- target.facingX
+    ,   targetPreviousFacingY <- target.facingY
     }
 
 toPositioned : Positioned(a) -> Positioned({})
 toPositioned p = { x = p.x, y = p.y }
+
+toFacing : Facing(a) -> Facing({})
+toFacing f = { x = f.x, y = f.y, vx = f.vx, vy = f.vy, ax = f.ax, ay = f.ay, facingX = f.facingX, facingY = f.facingY }
 
 followerKeys : Positioned a -> List(Positioned a) -> List(Keys)
 followerKeys firstTarget followers =
@@ -79,16 +104,20 @@ followerAI : Positioned(a) -> Positioned(b) -> Keys
 followerAI target follower =
     let distance = sqrt ((target.x - follower.x)^2 + (target.y - follower.y)^2)
     in
-        if | distance > 100 -> { x = if | target.x - follower.x > 5 -> 1
-                                        | target.x - follower.x < -5 -> -1
+        if | distance > 100 -> { x = if | target.x - follower.x > 50 -> 1
+                                        | target.x - follower.x < -50 -> -1
                                         | otherwise -> 0
-                               , y = if | target.y - follower.y > 5 -> 1
-                                        | target.y - follower.y < -5 -> -1
+                               , y = if | target.y - follower.y > 50 -> 1
+                                        | target.y - follower.y < -50 -> -1
                                         | otherwise -> 0
                                }
            | otherwise -> { x = 0, y = 0 }
 
-firstFollowerTarget : Player -> (Float, Float)
+-- On target direction shift, set breadcrumb
+-- On breadcrumb reached, unset
+-- Move towards breadcrumb if set, or target if not
+
+firstFollowerTarget : Facing(f) -> (Float, Float)
 firstFollowerTarget player =
     ( if | player.facingX > 0 -> player.x - 80
          | player.facingX < 0 -> player.x + 80
@@ -98,7 +127,7 @@ firstFollowerTarget player =
          | otherwise -> player.y
     )
 
-updateFollowerAcceleration : Player -> (Float, Float) -> Movable(m) -> Movable(m)
+updateFollowerAcceleration : Facing(f) -> (Float, Float) -> Movable(m) -> Movable(m)
 updateFollowerAcceleration player (x, y) follower =
     let a = sqrt ((player.x - follower.x)^2 + (player.y - follower.y)^2)
     in
@@ -142,12 +171,12 @@ updatePosition delta subject =
         y <- subject.y + delta * subject.vy
     }
 
-updatePlayerFacing : Keys -> Player -> Player
-updatePlayerFacing keys player =
-    { player |
-        facingX <- if | keys.x == 0 && keys.y == 0 -> player.facingX
+updateFacing : Keys -> Facing(f) -> Facing(f)
+updateFacing keys subject =
+    { subject |
+        facingX <- if | keys.x == 0 && keys.y == 0 -> subject.facingX
                       | otherwise -> keys.x,
-        facingY <- if | keys.x == 0 && keys.y == 0 -> player.facingY
+        facingY <- if | keys.x == 0 && keys.y == 0 -> subject.facingY
                       | otherwise -> keys.y
     }
 
