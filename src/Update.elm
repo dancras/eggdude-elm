@@ -67,10 +67,27 @@ update msg model =
             let
                 df =
                     directionalForce model.arrowKeys
+
+                newPosition =
+                    { x = model.position.x + fst df * delta / 2.5
+                    , y = model.position.y + snd df * delta / 2.5
+                    }
+
+                cameraPosition =
+                    { x =
+                        if model.position.x - model.cameraPosition.x > 200 then
+                            model.position.x - 200
+                        else if model.position.x - model.cameraPosition.x < -200 then
+                            model.position.x + 200
+                        else
+                            model.cameraPosition.x
+                    , y = 0
+                    }
             in
                 ( { model
                     | tick = model.tick + delta
-                    , position = ( fst model.position + fst df * delta / 5, snd model.position + snd df * delta / 5 )
+                    , position = newPosition
+                    , cameraPosition = cameraPosition
                   }
                 , Cmd.none
                 )

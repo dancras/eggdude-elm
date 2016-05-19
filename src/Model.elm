@@ -9,7 +9,14 @@ type alias Model =
     , inc : Int
     , windowSize : Size
     , arrowKeys : ArrowKeys.Model
-    , position : ( Float, Float )
+    , position :
+        { x : Float
+        , y : Float
+        }
+    , cameraPosition :
+        { x : Float
+        , y : Float
+        }
     }
 
 
@@ -22,5 +29,12 @@ initial =
         , height = 0
         }
     , arrowKeys = ArrowKeys.initial
-    , position = ( 0, 0 )
+    , position =
+        { x = 0
+        , y = 0
+        }
+    , cameraPosition =
+        { x = 0
+        , y = 0
+        }
     }

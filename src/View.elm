@@ -6,12 +6,24 @@ import Element exposing (toHtml)
 import Html exposing (Html)
 import Model exposing (Model)
 import Update exposing (Msg)
-import ArrowKeys exposing (KeyState(..))
+
+
+modelThroughCamera : Model -> Model
+modelThroughCamera model =
+    { model
+        | position =
+            { x = model.position.x - model.cameraPosition.x
+            , y = model.position.y
+            }
+    }
 
 
 view : Model -> Html Msg
-view model =
+view model' =
     let
+        model =
+            modelThroughCamera model'
+
         windowSize =
             model.windowSize
 
@@ -22,15 +34,10 @@ view model =
             windowSize.height
             [ rect w h |> filled (rgb 240 250 230)
             , circle 50
-                |> filled (ballColor model)
-                |> move (model.position)
+                |> filled (rgb 0 0 0)
+                |> move ( model.position.x, model.position.y )
+            , circle 10
+                |> filled (rgb 40 40 160)
+                |> move ( -model.cameraPosition.x, 0 )
             ]
             |> toHtml
-
-
-ballColor : Model -> Color
-ballColor model =
-    if model.arrowKeys.leftKey == KeyDown then
-        rgb 255 0 0
-    else
-        rgb 0 0 0
