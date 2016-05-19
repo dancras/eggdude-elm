@@ -9,11 +9,6 @@ import Update exposing (Msg)
 import List
 
 
-viewThroughCamera : Model -> Form -> Form
-viewThroughCamera model form =
-    move ( -model.cameraPosition.x, 0 ) form
-
-
 view : Model -> Html Msg
 view model =
     let
@@ -27,7 +22,7 @@ view model =
             windowSize.height
             (List.concat
                 [ [ rect w h |> filled (rgb 240 250 230) ]
-                , (List.map (viewThroughCamera model)
+                , (List.map (\form -> move ( -model.camera.x, 0 ) form)
                     [ circle 50
                         |> filled (rgb 0 0 0)
                         |> move ( model.position.x, model.position.y )

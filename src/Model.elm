@@ -2,6 +2,7 @@ module Model exposing (Model, initial)
 
 import Window exposing (Size)
 import ArrowKeys
+import Camera
 
 
 type alias Model =
@@ -13,10 +14,7 @@ type alias Model =
         { x : Float
         , y : Float
         }
-    , cameraPosition :
-        { x : Float
-        , y : Float
-        }
+    , camera : Camera.Model
     }
 
 
@@ -33,8 +31,5 @@ initial =
         { x = 0
         , y = 0
         }
-    , cameraPosition =
-        { x = 0
-        , y = 0
-        }
+    , camera = Camera.initial
     }

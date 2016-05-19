@@ -4,6 +4,7 @@ import Time exposing (Time)
 import Window exposing (Size)
 import Model exposing (Model)
 import ArrowKeys exposing (KeyState(..))
+import Camera
 
 
 type Msg
@@ -72,22 +73,11 @@ update msg model =
                     { x = model.position.x + fst df * delta / 2.5
                     , y = model.position.y + snd df * delta / 2.5
                     }
-
-                cameraPosition =
-                    { x =
-                        if model.position.x - model.cameraPosition.x > 200 then
-                            model.position.x - 200
-                        else if model.position.x - model.cameraPosition.x < -200 then
-                            model.position.x + 200
-                        else
-                            model.cameraPosition.x
-                    , y = 0
-                    }
             in
                 ( { model
                     | tick = model.tick + delta
                     , position = newPosition
-                    , cameraPosition = cameraPosition
+                    , camera = Camera.follow 200 model.camera newPosition
                   }
                 , Cmd.none
                 )
