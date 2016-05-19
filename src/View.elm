@@ -34,14 +34,3 @@ ballColor model =
         rgb 255 0 0
     else
         rgb 0 0 0
-
-
-
---div []
---  [ button [ onClick Update.Decrement ] [ text "-" ]
---  , div [] [ text (toString inc) ]
---  , button [ onClick Update.Increment ] [ text "+" ]
---  , div [] [ text (toString tick) ]
---  , div [] [ text (toString size.width) ]
---  , div [] [ text (toString size.height) ]
---  ]

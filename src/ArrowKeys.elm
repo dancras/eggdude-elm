@@ -42,7 +42,7 @@ subscriptions model =
 
 update : Msg -> Model -> Model
 update msg model =
-    case (Debug.log "update" msg) of
+    case msg of
         LeftKeyChange keyState ->
             { model
                 | leftKey = keyState
@@ -71,13 +71,13 @@ onKeyChange : KeyState -> KeyCode -> Msg
 onKeyChange state keyCode =
     case keyCode of
         37 ->
-            LeftKeyChange (Debug.log "lstate" state)
+            LeftKeyChange state
 
         38 ->
             UpKeyChange state
 
         39 ->
-            RightKeyChange (Debug.log "rstate" state)
+            RightKeyChange state
 
         40 ->
             DownKeyChange state
