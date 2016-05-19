@@ -23,5 +23,5 @@ follow bound camera subject =
             subject.x + bound
         else
             camera.x
-    , y = 0
+    , y = camera.y
     }

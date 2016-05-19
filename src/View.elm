@@ -4,7 +4,7 @@ import Collage exposing (..)
 import Color exposing (Color, rgb)
 import Element exposing (toHtml)
 import Html exposing (Html)
-import Model exposing (Model)
+import Model exposing (Model, Wall(..), Orientation(..))
 import Update exposing (Msg)
 import List
 
@@ -22,15 +22,30 @@ view model =
             windowSize.height
             (List.concat
                 [ [ rect w h |> filled (rgb 240 250 230) ]
-                , (List.map (\form -> move ( -model.camera.x, 0 ) form)
-                    [ circle 50
-                        |> filled (rgb 0 0 0)
-                        |> move ( model.position.x, model.position.y )
-                    , circle 10
-                        |> filled (rgb 40 40 160)
-                        |> move ( 0, 0 )
-                    ]
+                , (List.map (\form -> move ( -model.camera.x, -model.camera.y ) form)
+                    <| [ circle 50
+                            |> filled (rgb 0 0 0)
+                            |> move ( model.position.x, model.position.y )
+                       , circle 10
+                            |> filled (rgb 40 40 160)
+                            |> move ( 100, 75 )
+                       ]
+                    ++ List.map (drawWall model.width model.height) model.walls
                   )
                 ]
             )
             |> toHtml
+
+
+drawWall : Float -> Float -> Wall -> Form
+drawWall w h wall =
+    case wall of
+        Wall Horizontal { x, y } length ->
+            rect (length + 30) 30
+                |> filled (rgb 0 100 0)
+                |> move ( x, y )
+
+        Wall Vertical { x, y } length ->
+            rect 30 (length + 30)
+                |> filled (rgb 0 80 0)
+                |> move ( x, y )
