@@ -6,24 +6,17 @@ import Element exposing (toHtml)
 import Html exposing (Html)
 import Model exposing (Model)
 import Update exposing (Msg)
+import List
 
 
-modelThroughCamera : Model -> Model
-modelThroughCamera model =
-    { model
-        | position =
-            { x = model.position.x - model.cameraPosition.x
-            , y = model.position.y
-            }
-    }
+viewThroughCamera : Model -> Form -> Form
+viewThroughCamera model form =
+    move ( -model.cameraPosition.x, 0 ) form
 
 
 view : Model -> Html Msg
-view model' =
+view model =
     let
-        model =
-            modelThroughCamera model'
-
         windowSize =
             model.windowSize
 
@@ -32,12 +25,17 @@ view model' =
     in
         collage windowSize.width
             windowSize.height
-            [ rect w h |> filled (rgb 240 250 230)
-            , circle 50
-                |> filled (rgb 0 0 0)
-                |> move ( model.position.x, model.position.y )
-            , circle 10
-                |> filled (rgb 40 40 160)
-                |> move ( -model.cameraPosition.x, 0 )
-            ]
+            (List.concat
+                [ [ rect w h |> filled (rgb 240 250 230) ]
+                , (List.map (viewThroughCamera model)
+                    [ circle 50
+                        |> filled (rgb 0 0 0)
+                        |> move ( model.position.x, model.position.y )
+                    , circle 10
+                        |> filled (rgb 40 40 160)
+                        |> move ( 0, 0 )
+                    ]
+                  )
+                ]
+            )
             |> toHtml
