@@ -9,8 +9,6 @@ import Camera
 
 type Msg
     = ArrowKeysMsg ArrowKeys.Msg
-    | Increment
-    | Decrement
     | Tick Time
     | WindowSize Size
     | Noop
@@ -46,20 +44,6 @@ update msg model =
         ArrowKeysMsg msg ->
             ( { model
                 | arrowKeys = ArrowKeys.update msg model.arrowKeys
-              }
-            , Cmd.none
-            )
-
-        Increment ->
-            ( { model
-                | inc = model.inc + 1
-              }
-            , Cmd.none
-            )
-
-        Decrement ->
-            ( { model
-                | inc = model.inc - 1
               }
             , Cmd.none
             )

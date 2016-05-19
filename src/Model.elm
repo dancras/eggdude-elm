@@ -7,7 +7,6 @@ import Camera
 
 type alias Model =
     { tick : Float
-    , inc : Int
     , windowSize : Size
     , arrowKeys : ArrowKeys.Model
     , position :
@@ -21,7 +20,6 @@ type alias Model =
 initial : Model
 initial =
     { tick = 0
-    , inc = 0
     , windowSize =
         { width = 0
         , height = 0
