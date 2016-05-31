@@ -41,11 +41,11 @@ drawWall : Float -> Float -> Wall -> Form
 drawWall w h wall =
     case wall of
         Wall Horizontal { x, y } length ->
-            rect (length + 30) 30
+            rect length 30
                 |> filled (rgb 0 100 0)
                 |> move ( x, y )
 
         Wall Vertical { x, y } length ->
-            rect 30 (length + 30)
+            rect 30 length
                 |> filled (rgb 0 80 0)
                 |> move ( x, y )

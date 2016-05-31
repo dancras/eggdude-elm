@@ -5,6 +5,8 @@ import Window exposing (Size)
 import Model exposing (Model)
 import ArrowKeys exposing (KeyState(..))
 import Camera
+import Math.Vector2 as Vector
+import List
 
 
 type Msg
@@ -14,7 +16,7 @@ type Msg
     | Noop
 
 
-directionalForce : ArrowKeys.Model -> ( Float, Float )
+directionalForce : ArrowKeys.Model -> { x : Float, y : Float }
 directionalForce { leftKey, upKey, rightKey, downKey } =
     let
         force =
@@ -23,19 +25,125 @@ directionalForce { leftKey, upKey, rightKey, downKey } =
             else
                 1
     in
-        ( if leftKey == rightKey then
-            0
-          else if leftKey == KeyDown then
-            -force
-          else
-            force
-        , if upKey == downKey then
-            0
-          else if upKey == KeyDown then
-            force
-          else
-            -force
-        )
+        { x =
+            if leftKey == rightKey then
+                0
+            else if leftKey == KeyDown then
+                -force
+            else
+                force
+        , y =
+            if upKey == downKey then
+                0
+            else if upKey == KeyDown then
+                force
+            else
+                -force
+        }
+
+
+type Edge
+    = Top
+    | Right
+    | Bottom
+    | Left
+
+
+getEdge : Edge -> Model.Wall -> LineSegment
+getEdge edge (Model.Wall orientation { x, y } length) =
+    let
+        ( shiftX, shiftY ) =
+            if orientation == Model.Horizontal then
+                ( length / 2, 15 )
+            else
+                ( 15, length / 2 )
+    in
+        if edge == Top then
+            LineSegment (Point (x - shiftX) (y + shiftY)) (Point (x + shiftX) (y + shiftY))
+        else if edge == Right then
+            LineSegment (Point (x + shiftX) (y + shiftY)) (Point (x + shiftX) (y - shiftY))
+        else if edge == Bottom then
+            LineSegment (Point (x - shiftX) (y - shiftY)) (Point (x + shiftX) (y - shiftY))
+        else
+            LineSegment (Point (x - shiftX) (y + shiftY)) (Point (x - shiftX) (y - shiftY))
+
+
+hasCollision : List Model.Wall -> Edge -> { x : Float, y : Float } -> Bool
+hasCollision walls edge position =
+    List.any (intersects (Circle (Point position.x position.y) 50)) (List.map (getEdge edge) walls)
+
+
+avoidCollisions : Model -> { x : Float, y : Float } -> { x : Float, y : Float } -> { x : Float, y : Float }
+avoidCollisions { position, walls } df newPosition =
+    { newPosition
+        | y =
+            if
+                (df.y > 0 && hasCollision walls Bottom newPosition)
+                    || (df.y < 0 && hasCollision walls Top newPosition)
+            then
+                position.y
+            else
+                newPosition.y
+        , x =
+            if
+                (df.x > 0 && hasCollision walls Left newPosition)
+                    || (df.x < 0 && hasCollision walls Right newPosition)
+            then
+                position.x
+            else
+                newPosition.x
+    }
+
+
+type Point
+    = Point Float Float
+
+
+type LineSegment
+    = LineSegment Point Point
+
+
+type Circle
+    = Circle Point Float
+
+
+inside : Circle -> Point -> Bool
+inside (Circle (Point h k) r) (Point px py) =
+    (px - h) ^ 2 + (py - k) ^ 2 <= r ^ 2
+
+
+intersects : Circle -> LineSegment -> Bool
+intersects circle (LineSegment (Point lp1x lp1y) (Point lp2x lp2y)) =
+    let
+        (Circle (Point h k) r) =
+            circle
+
+        segv =
+            Vector.vec2 (lp2x - lp1x) (lp2y - lp1y)
+
+        ptv =
+            Vector.vec2 (h - lp1x) (k - lp1y)
+
+        lenprojv =
+            Vector.dot ptv (Vector.normalize segv)
+
+        projv =
+            Vector.scale lenprojv (Vector.normalize segv)
+
+        closest =
+            if (lenprojv < 0) then
+                Point lp1x lp1y
+            else if (lenprojv > Vector.length segv) then
+                Point lp2x lp2y
+            else
+                Point (lp1x + Vector.getX projv) (lp1y + Vector.getY projv)
+    in
+        inside circle closest
+
+
+pixelsPerSecond : Float -> Time -> Float
+pixelsPerSecond pps delta =
+    delta / (1000 / pps)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -54,9 +162,11 @@ update msg model =
                     directionalForce model.arrowKeys
 
                 newPosition =
-                    { x = model.position.x + fst df * delta / 2.5
-                    , y = model.position.y + snd df * delta / 2.5
-                    }
+                    avoidCollisions model
+                        df
+                        { x = model.position.x + df.x * (pixelsPerSecond 400 delta)
+                        , y = model.position.y + df.y * (pixelsPerSecond 400 delta)
+                        }
             in
                 ( { model
                     | tick = model.tick + delta

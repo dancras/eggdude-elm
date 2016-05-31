@@ -49,10 +49,10 @@ initial =
         , y = 75
         }
     , walls =
-        [ Wall Horizontal { x = 450, y = 0 } 900
-        , Wall Horizontal { x = 450, y = 150 } 900
-        , Wall Vertical { x = 0, y = 75 } 150
-        , Wall Vertical { x = 900, y = 75 } 150
+        [ Wall Horizontal { x = 450, y = 0 } (900 + 30)
+        , Wall Horizontal { x = 450, y = 150 } (900 + 30)
+        , Wall Vertical { x = 0, y = 75 } (150 + 30)
+        , Wall Vertical { x = 900, y = 75 } (150 + 30)
         ]
     , width = 900
     , height = 150
