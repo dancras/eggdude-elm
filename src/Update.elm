@@ -5,7 +5,7 @@ import Window exposing (Size)
 import Model exposing (Model)
 import ArrowKeys exposing (KeyState(..))
 import Camera
-import Math.Vector2 as Vector
+import Geometry exposing (..)
 import List
 
 
@@ -70,7 +70,7 @@ getEdge edge (Model.Wall orientation { x, y } length) =
 
 hasCollision : List Model.Wall -> Edge -> { x : Float, y : Float } -> Bool
 hasCollision walls edge position =
-    List.any (intersects (Circle (Point position.x position.y) 50)) (List.map (getEdge edge) walls)
+    List.any (intersectsCircle (Circle (Point position.x position.y) 50)) (List.map (getEdge edge) walls)
 
 
 avoidCollisions : Model -> { x : Float, y : Float } -> { x : Float, y : Float } -> { x : Float, y : Float }
@@ -93,52 +93,6 @@ avoidCollisions { position, walls } df newPosition =
             else
                 newPosition.x
     }
-
-
-type Point
-    = Point Float Float
-
-
-type LineSegment
-    = LineSegment Point Point
-
-
-type Circle
-    = Circle Point Float
-
-
-inside : Circle -> Point -> Bool
-inside (Circle (Point h k) r) (Point px py) =
-    (px - h) ^ 2 + (py - k) ^ 2 <= r ^ 2
-
-
-intersects : Circle -> LineSegment -> Bool
-intersects circle (LineSegment (Point lp1x lp1y) (Point lp2x lp2y)) =
-    let
-        (Circle (Point h k) r) =
-            circle
-
-        segv =
-            Vector.vec2 (lp2x - lp1x) (lp2y - lp1y)
-
-        ptv =
-            Vector.vec2 (h - lp1x) (k - lp1y)
-
-        lenprojv =
-            Vector.dot ptv (Vector.normalize segv)
-
-        projv =
-            Vector.scale lenprojv (Vector.normalize segv)
-
-        closest =
-            if (lenprojv < 0) then
-                Point lp1x lp1y
-            else if (lenprojv > Vector.length segv) then
-                Point lp2x lp2y
-            else
-                Point (lp1x + Vector.getX projv) (lp1y + Vector.getY projv)
-    in
-        inside circle closest
 
 
 pixelsPerSecond : Float -> Time -> Float
