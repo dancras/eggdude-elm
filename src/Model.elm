@@ -3,6 +3,7 @@ module Model exposing (Model, initial, Orientation(..), Wall(..))
 import Window exposing (Size)
 import ArrowKeys
 import Camera
+import Geometry exposing (Point(..))
 
 
 type Orientation
@@ -24,7 +25,9 @@ type alias Model =
     { tick : Float
     , windowSize : Size
     , arrowKeys : ArrowKeys.Model
-    , position : Position
+    , player :
+        { position : Point
+        }
     , camera : Camera.Model
     , walls : List Wall
     , width : Float
@@ -40,9 +43,8 @@ initial =
         , height = 0
         }
     , arrowKeys = ArrowKeys.initial
-    , position =
-        { x = 450
-        , y = 75
+    , player =
+        { position = Point 450 75
         }
     , camera =
         { x = 450

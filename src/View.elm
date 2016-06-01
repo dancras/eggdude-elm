@@ -7,6 +7,7 @@ import Html exposing (Html)
 import Model exposing (Model, Wall(..), Orientation(..))
 import Update exposing (Msg)
 import List
+import Geometry exposing (pointToTuple)
 
 
 view : Model -> Html Msg
@@ -25,7 +26,7 @@ view model =
                 , (List.map (\form -> move ( -model.camera.x, -model.camera.y ) form)
                     <| [ circle 50
                             |> filled (rgb 0 0 0)
-                            |> move ( model.position.x, model.position.y )
+                            |> move (pointToTuple model.player.position)
                        , circle 10
                             |> filled (rgb 40 40 160)
                             |> move ( 100, 75 )

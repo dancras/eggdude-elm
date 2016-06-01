@@ -19,6 +19,26 @@ type Circle
     = Circle Point Float
 
 
+pointToTuple : Point -> ( Float, Float )
+pointToTuple (Point x y) =
+    ( x, y )
+
+
+pointToRecord : Point -> { x : Float, y : Float }
+pointToRecord (Point x y) =
+    { x = x, y = y }
+
+
+getPointX : Point -> Float
+getPointX (Point x _) =
+    x
+
+
+getPointY : Point -> Float
+getPointY (Point _ y) =
+    y
+
+
 vectorBetween : Point -> Point -> Vector
 vectorBetween (Point startX startY) (Point endX endY) =
     Vector2.vec2 (endX - startX) (endY - startY)

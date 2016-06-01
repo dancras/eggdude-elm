@@ -6,6 +6,7 @@ import Model exposing (Model)
 import ArrowKeys exposing (KeyState(..))
 import Camera
 import Geometry exposing (..)
+import Math.Vector2 as Vector2
 import List
 
 
@@ -16,7 +17,7 @@ type Msg
     | Noop
 
 
-directionalForce : ArrowKeys.Model -> { x : Float, y : Float }
+directionalForce : ArrowKeys.Model -> Vector2.Vec2
 directionalForce { leftKey, upKey, rightKey, downKey } =
     let
         force =
@@ -24,22 +25,24 @@ directionalForce { leftKey, upKey, rightKey, downKey } =
                 sin 45
             else
                 1
-    in
-        { x =
+
+        fx =
             if leftKey == rightKey then
                 0
             else if leftKey == KeyDown then
                 -force
             else
                 force
-        , y =
+
+        fy =
             if upKey == downKey then
                 0
             else if upKey == KeyDown then
                 force
             else
                 -force
-        }
+    in
+        Vector2.vec2 fx fy
 
 
 type Edge
@@ -68,31 +71,45 @@ getEdge edge (Model.Wall orientation { x, y } length) =
             LineSegment (Point (x - shiftX) (y + shiftY)) (Point (x - shiftX) (y - shiftY))
 
 
-hasCollision : List Model.Wall -> Edge -> { x : Float, y : Float } -> Bool
+hasCollision : List Model.Wall -> Edge -> Point -> Bool
 hasCollision walls edge position =
-    List.any (intersectsCircle (Circle (Point position.x position.y) 50)) (List.map (getEdge edge) walls)
+    List.any (intersectsCircle (Circle position 50)) (List.map (getEdge edge) walls)
 
 
-avoidCollisions : Model -> { x : Float, y : Float } -> { x : Float, y : Float } -> { x : Float, y : Float }
-avoidCollisions { position, walls } df newPosition =
-    { newPosition
-        | y =
+avoidCollisions : Model -> Vector2.Vec2 -> Point
+avoidCollisions { player, walls } movement =
+    let
+        proposedPosition =
+            carryPoint movement player.position
+
+        (Point proposedX proposedY) =
+            proposedPosition
+
+        moveX =
+            Vector2.getX movement
+
+        moveY =
+            Vector2.getY movement
+
+        newY =
             if
-                (df.y > 0 && hasCollision walls Bottom newPosition)
-                    || (df.y < 0 && hasCollision walls Top newPosition)
+                (moveY > 0 && hasCollision walls Bottom proposedPosition)
+                    || (moveY < 0 && hasCollision walls Top proposedPosition)
             then
-                position.y
+                getPointY player.position
             else
-                newPosition.y
-        , x =
+                proposedY
+
+        newX =
             if
-                (df.x > 0 && hasCollision walls Left newPosition)
-                    || (df.x < 0 && hasCollision walls Right newPosition)
+                (moveX > 0 && hasCollision walls Left proposedPosition)
+                    || (moveX < 0 && hasCollision walls Right proposedPosition)
             then
-                position.x
+                getPointX player.position
             else
-                newPosition.x
-    }
+                proposedX
+    in
+        Point newX newY
 
 
 pixelsPerSecond : Float -> Time -> Float
@@ -113,19 +130,17 @@ update msg model =
         Tick delta ->
             let
                 df =
-                    directionalForce model.arrowKeys
+                    Vector2.scale (pixelsPerSecond 400 delta) (directionalForce model.arrowKeys)
 
                 newPosition =
-                    avoidCollisions model
-                        df
-                        { x = model.position.x + df.x * (pixelsPerSecond 400 delta)
-                        , y = model.position.y + df.y * (pixelsPerSecond 400 delta)
-                        }
+                    avoidCollisions model df
             in
                 ( { model
                     | tick = model.tick + delta
-                    , position = newPosition
-                    , camera = Camera.follow 200 model.camera newPosition
+                    , player =
+                        { position = newPosition
+                        }
+                    , camera = Camera.follow 200 model.camera (pointToRecord newPosition)
                   }
                 , Cmd.none
                 )
