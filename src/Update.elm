@@ -5,9 +5,11 @@ import Window exposing (Size)
 import Model exposing (Model)
 import ArrowKeys exposing (KeyState(..))
 import Camera
+import Collision exposing (..)
 import Geometry exposing (..)
 import Math.Vector2 as Vector2
 import List
+import Maze exposing (..)
 
 
 type Msg
@@ -45,73 +47,6 @@ directionalForce { leftKey, upKey, rightKey, downKey } =
         Vector2.vec2 fx fy
 
 
-type Edge
-    = Top
-    | Right
-    | Bottom
-    | Left
-
-
-getEdge : Edge -> Model.Wall -> LineSegment
-getEdge edge (Model.Wall orientation { x, y } length) =
-    let
-        ( shiftX, shiftY ) =
-            if orientation == Model.Horizontal then
-                ( length / 2, 15 )
-            else
-                ( 15, length / 2 )
-    in
-        if edge == Top then
-            LineSegment (Point (x - shiftX) (y + shiftY)) (Point (x + shiftX) (y + shiftY))
-        else if edge == Right then
-            LineSegment (Point (x + shiftX) (y + shiftY)) (Point (x + shiftX) (y - shiftY))
-        else if edge == Bottom then
-            LineSegment (Point (x - shiftX) (y - shiftY)) (Point (x + shiftX) (y - shiftY))
-        else
-            LineSegment (Point (x - shiftX) (y + shiftY)) (Point (x - shiftX) (y - shiftY))
-
-
-hasCollision : List Model.Wall -> Edge -> Point -> Bool
-hasCollision walls edge position =
-    List.any (intersectsCircle (Circle position 50)) (List.map (getEdge edge) walls)
-
-
-avoidCollisions : Model -> Vector2.Vec2 -> Point
-avoidCollisions { player, walls } movement =
-    let
-        proposedPosition =
-            carryPoint movement player.position
-
-        (Point proposedX proposedY) =
-            proposedPosition
-
-        moveX =
-            Vector2.getX movement
-
-        moveY =
-            Vector2.getY movement
-
-        newY =
-            if
-                (moveY > 0 && hasCollision walls Bottom proposedPosition)
-                    || (moveY < 0 && hasCollision walls Top proposedPosition)
-            then
-                getPointY player.position
-            else
-                proposedY
-
-        newX =
-            if
-                (moveX > 0 && hasCollision walls Left proposedPosition)
-                    || (moveX < 0 && hasCollision walls Right proposedPosition)
-            then
-                getPointX player.position
-            else
-                proposedX
-    in
-        Point newX newY
-
-
 pixelsPerSecond : Float -> Time -> Float
 pixelsPerSecond pps delta =
     delta / (1000 / pps)
@@ -129,11 +64,16 @@ update msg model =
 
         Tick delta ->
             let
-                df =
+                proposedMovement =
                     Vector2.scale (pixelsPerSecond 400 delta) (directionalForce model.arrowKeys)
 
+                movement =
+                    List.foldr (avoidCollision (Circle model.player.position 50))
+                        proposedMovement
+                        (List.concatMap (getWallEdges model.walls) (getCollisionEdges proposedMovement))
+
                 newPosition =
-                    avoidCollisions model df
+                    carryPoint movement model.player.position
             in
                 ( { model
                     | tick = model.tick + delta

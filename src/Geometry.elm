@@ -19,6 +19,18 @@ type Circle
     = Circle Point Float
 
 
+type Edge
+    = Top
+    | Right
+    | Bottom
+    | Left
+
+
+type Orientation
+    = Horizontal
+    | Vertical
+
+
 pointToTuple : Point -> ( Float, Float )
 pointToTuple (Point x y) =
     ( x, y )
@@ -54,20 +66,17 @@ pointInsideCircle (Circle (Point centerX centerY) radius) (Point pointX pointY) 
     (pointX - centerX) ^ 2 + (pointY - centerY) ^ 2 <= radius ^ 2
 
 
-intersectsCircle : Circle -> LineSegment -> Bool
-intersectsCircle circle (LineSegment start end) =
+intersectVector : Point -> LineSegment -> Vector
+intersectVector point (LineSegment start end) =
     let
-        (Circle center r) =
-            circle
-
         startToEnd =
             vectorBetween start end
 
-        startToCircle =
-            vectorBetween start center
+        startToPoint =
+            vectorBetween start point
 
         projectionLength =
-            Vector2.dot startToCircle (Vector2.normalize startToEnd)
+            Vector2.dot startToPoint (Vector2.normalize startToEnd)
 
         projection =
             Vector2.scale projectionLength (Vector2.normalize startToEnd)
@@ -80,4 +89,4 @@ intersectsCircle circle (LineSegment start end) =
             else
                 carryPoint projection start
     in
-        pointInsideCircle circle closest
+        vectorBetween closest point

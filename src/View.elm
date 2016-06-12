@@ -4,10 +4,11 @@ import Collage exposing (..)
 import Color exposing (Color, rgb)
 import Element exposing (toHtml)
 import Html exposing (Html)
-import Model exposing (Model, Wall(..), Orientation(..))
+import Model exposing (Model)
 import Update exposing (Msg)
 import List
-import Geometry exposing (pointToTuple)
+import Geometry exposing (Orientation(..), pointToTuple)
+import Maze exposing (..)
 
 
 view : Model -> Html Msg
